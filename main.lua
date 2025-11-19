@@ -98,10 +98,84 @@ function calculate_coords_from_field(row, column)
     return x_coord, y_coord;
 end
 
+-- this function returns 1 or 2, if one of these players won, and 0 otherwise
+function check_for_winner()
+    -- check columns
+    for col=1,7,1 do
+        for row=1,3,1 do
+            if not winner_found then
+                winner_found = are_equal(col,row,col,row+1,col,row+2,col,row+3);
+            end
+        end
+    end
+    -- check rows
+    for col=1,4,1 do
+        for row=1,7,1 do
+            if not winner_found then
+                winner_found = are_equal(col,row,col+1,row,col+2,row,col+3,row);
+            end
+        end
+    end
+    -- check diagonals \
+    for col=1,4,1 do
+        for row=1,3,1 do
+            if not winner_found then
+                winner_found = are_equal(col,row,col+1,row+1,col+2,row+2,col+3,row+3);
+            end
+        end
+    end
+    -- check diagonals /
+    for col=4,7,1 do
+        for row=1,3,1 do
+            if not winner_found then
+                winner_found = are_equal(col,row,col-1,row+1,col-2,row+2,col-3,row+3);
+            end
+        end
+    end
+
+    -- this may be subject to change depending on when player to move changes
+    if winner_found and player_1_to_move then
+        return 1;
+    elseif winner_found and not player_1_to_move then
+        return 2;
+    else
+        return 0;
+    end
+end
+
+-- this function takes in for column row pairs and checks if their entries machtch up
+function are_equal(col1,row1,col2,row2,col3,row3,col4,row4)
+    first_entry = board[col1][row1];
+    if (not(board[col2][row2] == first_entry)) then
+        return false;
+    end
+    if (not(board[col3][row3] == first_entry)) then
+        return false;
+    end
+    if (not(board[col4][row4] == first_entry)) then
+        return false;
+    end
+    return true;
+end
+
 -- this function takes in a column and returns the first free entry
+-- be careful, since this does not take into account columns that are already full
 function send_token_down(column)
-    while field
-        board[column]
+    row = 1;
+    repeat
+        field = board[column][row];
+        row ++;
+    until (not (field == 0));
+
+    return row;
+end
+
+-- this function checks whether a given column is full or not by inspecting the top element
+function is_full(column)
+    if (board[column][row] == 0) then
+        return false;
+    end
+    return true;
 end
 
 -- this function registers what the user is doing
