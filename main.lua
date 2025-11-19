@@ -57,8 +57,28 @@ function _draw()
     map();
     spr(33, 184, 240, 2, 2);
     spr(35, 136, 160, 2, 2);
+    paint_placed_chips();
 
     spr(active_token.sprite, active_token.x_pos, active_token.y_pos, 2,2);
+end
+
+-- this function checks the entire grid and paints them
+function paint_placed_chips()
+    for col = 1,7,1 do
+        for row = 1,6,1 do
+            owner = board[col][row];
+            if (owner == 1) then
+                sprite = player_1.token_sprite;
+            elseif (owner == 2) then
+                sprite = player_2.token_sprite;
+            end
+
+            if not (owner == 0) then
+                x_pos, y_pos = calculate_coords_from_field(col, row);
+                spr(sprite, x_pos, y_pos, 2, 2);
+            end
+        end
+    end
 end
 
 -- determines where the cursor is currently located
@@ -92,7 +112,7 @@ function update_active_chip()
 end
 
 -- takes in board position and calculates pixel position for sprite
-function calculate_coords_from_field(row, column)
+function calculate_coords_from_field(column, row)
     x_coord = 16*row + x_zero_pos - 8;
     y_coord = 16*column + y_zero_pos + 16;
     return x_coord, y_coord;
