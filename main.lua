@@ -8,9 +8,6 @@ function _init()
     x_zero_pos = 128;
     y_zero_pos = 128;
 
-    x_zero_pos = 0;
-    y_zero_pos = 0;
-
     -- initialize empty field
     for col = 1,columns do
         board[col] = {}
@@ -48,16 +45,18 @@ function _init()
 end
 
 function _update()
-    update_active_chip();
+    user_input = get_user_input();
+    if (user_input == "place") then
+    else
+        update_active_chip(user_input);
+    end
 end
 
 function _draw()
     cls();
     camera(x_zero_pos, y_zero_pos);
-    map();
-    spr(33, 184, 240, 2, 2);
-    spr(35, 136, 160, 2, 2);
     paint_placed_chips();
+    map();
 
     spr(active_token.sprite, active_token.x_pos, active_token.y_pos, 2,2);
 end
@@ -82,8 +81,7 @@ function paint_placed_chips()
 end
 
 -- determines where the cursor is currently located
-function update_active_chip()
-    input = get_user_input()
+function update_active_chip(user_input)
 
     if (player_1_to_move) then
         player = player_1;
@@ -91,9 +89,9 @@ function update_active_chip()
         player = player_2;
     end
 
-    if (input == "right") then
+    if (user_input == "right") then
         player.cursor_pos += 1;
-    elseif (input == "left") then
+    elseif (user_input == "left") then
         player.cursor_pos -= 1;
     end
 
@@ -184,7 +182,7 @@ function send_token_down(column)
     row = 1;
     repeat
         field = board[column][row];
-        row ++;
+        row+=1;
     until (not (field == 0));
 
     return row;
@@ -206,6 +204,20 @@ function get_user_input()
         player = player_1;
     else
         player = player_2;
+    end
+
+    if (btn(player.left_button) and btn(player.right_button)) then
+        if (player == player1) then
+            return "idle";
+        elseif (player == player2) then
+            return "place";
+        else
+            return "idle";
+        end
+    end
+
+    if (player == player1 and btnp(3)) then
+        return "place";
     end
 
     if (btnp(player.right_button)) then
