@@ -2,11 +2,13 @@
 
 function _init()
     board = {};
-    local rows = 6;
-    local columns = 7;
+    rows = 6;
+    columns = 7;
 
     x_zero_pos = 128;
     y_zero_pos = 128;
+    x_zero_pos = 0;
+    y_zero_pos = 0;
 
     -- initialize empty field
     for col = 1,columns do
@@ -17,10 +19,21 @@ function _init()
     end
 
     player_1_to_move = true;
+    current_frame = 0;
+
+    -- everything related to delaying the inputs for a smooth experience
+    input_delay = {
+        frame_of_input = 0;
+        input_detected = false;
+        delay_margin = 2;
+    }
+
+
     -- initialize players
     player_1 = {
         token_sprite = 33,
         cursor_pos = 4,
+        board_id = 1,
         left_button = 0,
         right_button = 1,
     };
@@ -28,13 +41,17 @@ function _init()
     player_2 = {
         token_sprite = 35,
         cursor_pos = 4,
-        left_button = 4,
-        right_button = 5,
+        board_id = 2,
+        left_button = 5,
+        right_button = 4,
     };
 
+    -- the active token only serves to draw the current active token.
+    -- the actual position is saved in the player's cursor pos
+    x_coord, y_coord = calculate_coords_from_field(1,0);
     active_token = {
-        x_pos = 0,
-        y_pos = 0,
+        x_pos = x_coord,
+        y_pos = y_coord,
         sprite = player_1.token_sprite,
     };
 
@@ -47,13 +64,35 @@ end
 function _update()
     user_input = get_user_input();
     if (user_input == "place") then
+        if (player_1_to_move) then
+            chosen_slot = player_1.cursor_pos;
+        else
+            chosen_slot = player_2.cursor_pos;
+        end
+
+        if (not (is_full(chosen_slot))) then
+            send_token_down(chosen_slot);
+        end
+
+        player_1_to_move = not(player_1_to_move);
     else
         update_active_chip(user_input);
     end
+
+    current_frame += 1;
 end
 
 function _draw()
-    cls();
+    -- shift to debugger
+    if (btn(2)) then
+        x_zero_pos = 0;
+        y_zero_pos = 0;
+    else
+        x_zero_pos = 128;
+        y_zero_pos = 128;
+        cls();
+    end
+
     camera(x_zero_pos, y_zero_pos);
     paint_placed_chips();
     map();
@@ -61,18 +100,19 @@ function _draw()
     spr(active_token.sprite, active_token.x_pos, active_token.y_pos, 2,2);
 end
 
--- this function checks the entire grid and paints them
+-- this function checks the entire grid for tokens that have already
+-- been placed and paints them accordingly
 function paint_placed_chips()
-    for col = 1,7,1 do
-        for row = 1,6,1 do
-            owner = board[col][row];
-            if (owner == 1) then
+    for col = 1,columns do
+        for row = 1,rows do
+            board_id = board[col][row];
+            if (board_id == player_1.board_id) then
                 sprite = player_1.token_sprite;
-            elseif (owner == 2) then
+            elseif (board_id == player_2.board_id) then
                 sprite = player_2.token_sprite;
             end
 
-            if not (owner == 0) then
+            if not (board_id == 0) then
                 x_pos, y_pos = calculate_coords_from_field(col, row);
                 spr(sprite, x_pos, y_pos, 2, 2);
             end
@@ -95,24 +135,28 @@ function update_active_chip(user_input)
         player.cursor_pos -= 1;
     end
 
-    if (player.cursor_pos == 0) then
+    if (player.cursor_pos <= 0) then
         player.cursor_pos = 7;
-    elseif (player.cursor_pos == 8) then
+    elseif (player.cursor_pos >= 8) then
         player.cursor_pos = 1;
     end
 
     -- write active token state to cursor
-    x_pos, y_pos = calculate_coords_from_field(player.cursor_pos,1);
+    x_pos, y_pos = calculate_coords_from_field(player.cursor_pos,0);
     active_token.x_pos = x_pos;
-    active_token.y_pos = y_zero_pos + 4;
+    active_token.y_pos = y_pos;
     active_token.sprite = player.token_sprite;
-
 end
 
 -- takes in board position and calculates pixel position for sprite
 function calculate_coords_from_field(column, row)
-    x_coord = 16*row + x_zero_pos - 8;
-    y_coord = 16*column + y_zero_pos + 16;
+    x_coord = 16*column + x_zero_pos - 8;
+    y_coord = 16*row + y_zero_pos + 16;
+
+    if (row == 0) then
+        y_coord = y_zero_pos + 4;
+    end
+
     return x_coord, y_coord;
 end
 
@@ -181,19 +225,26 @@ end
 function send_token_down(column)
     row = 1;
     repeat
-        field = board[column][row];
+        current_slot = board[column][row];
         row+=1;
-    until (not (field == 0));
+    until (not(current_slot == 0) or (row >= 6));
 
-    return row;
+    if (player_1_to_move) then
+        player = player_1;
+    else
+        player = player_2;
+    end
+
+    board[column][row] = player.board_id;
 end
 
 -- this function checks whether a given column is full or not by inspecting the top element
 function is_full(column)
-    if (board[column][row] == 0) then
+    if (board[column][1] == 0) then
         return false;
+    else
+        return true;
     end
-    return true;
 end
 
 -- this function registers what the user is doing
@@ -206,29 +257,40 @@ function get_user_input()
         player = player_2;
     end
 
-    if (btn(player.left_button) and btn(player.right_button)) then
-        if (player == player1) then
-            return "idle";
-        elseif (player == player2) then
+    -- introcude a small delay for buttons to not clip
+    if (btn() and not(input_delay.input_detected)) then
+        input_delay.frame_of_input = current_frame;
+        input_delay.input_detected = true;
+    elseif (btn() and (input_delay.input_detected)) then
+        input_delay.input_detected = true;
+    else
+        input_delay.input_detected = false;
+    end
+
+    -- if the delay is big enough, check for inputs now
+    if (current_frame - input_delay.frame_of_input >= input_delay.delay_margin) then
+        -- pressing both buttons does nothing on player 1, and
+        if (btn(player.left_button) and btn(player.right_button)) then
+            if (player == player_2) then
+                return "place";
+            elseif (player == player_1) then
+                return "idle";
+            end
+        end
+
+        -- pressing down button as player 1 places the chip
+        if (player == player_1 and btnp(3)) then
             return "place";
-        else
-            return "idle";
+        end
+
+        -- pressing left or right button as either player moves the chip
+        if (btnp(player.right_button)) then
+            return "right";
+        elseif (btnp(player.left_button)) then
+            return "left";
         end
     end
-
-    if (player == player1 and btnp(3)) then
-        return "place";
-    end
-
-    if (btnp(player.right_button)) then
-        return "right";
-    elseif (btnp(player.left_button)) then
-        return "left";
-    elseif (btn(player.left_button) and btn(player.right_button)) then
-        return "place";
-    else
-        return "idle";
-    end
+    return "idle";
 end
 
 
