@@ -19,13 +19,13 @@ function _init()
     end
 
     player_1_to_move = true;
-    current_frame = 0;
 
     -- everything related to delaying the inputs for a smooth experience
-    input_delay = {
-        frame_of_input = 0;
-        input_detected = false;
-        delay_margin = 2;
+    input = {
+        frames_passed = 0,
+        detected = false,
+        input = "idle",
+        delay_frames = 6,
     }
 
 
@@ -34,16 +34,18 @@ function _init()
         token_sprite = 33,
         cursor_pos = 4,
         board_id = 1,
-        left_button = 0,
-        right_button = 1,
+        left_button_pressed = btn(0),
+        right_button_pressed = btn(1),
+        place_button_pressed = btn(3),
     };
 
     player_2 = {
         token_sprite = 35,
         cursor_pos = 4,
         board_id = 2,
-        left_button = 5,
-        right_button = 4,
+        left_button_pressed = btn(5),
+        right_button_pressed = btn(4),
+        place_button_pressed = btn(5) and btn(4),
     };
 
     -- the active token only serves to draw the current active token.
@@ -78,8 +80,6 @@ function _update()
     else
         update_active_chip(user_input);
     end
-
-    current_frame += 1;
 end
 
 function _draw()
@@ -248,47 +248,36 @@ function is_full(column)
 end
 
 -- this function registers what the user is doing
--- only takes inputs from active player
+-- only accepts inputs from the active player
+-- after one action has been performed, all buttons have to be released in order
+-- to input the next action
 function get_user_input()
-
     if (player_1_to_move) then
         player = player_1;
     else
         player = player_2;
     end
 
-    -- introcude a small delay for buttons to not clip
-    if (btn() and not(input_delay.input_detected)) then
-        input_delay.frame_of_input = current_frame;
+    -- if an input has been detected, increment the counter until the input shoots, else do nothing
+    if (player.left_button_pressed or player.right_button_pressed or player.place_button_pressed) then
         input_delay.input_detected = true;
-    elseif (btn() and (input_delay.input_detected)) then
-        input_delay.input_detected = true;
+        if (player.place_button_pressed) then
+            input.input = "place";
+        elseif (player.left_button_pressed) then
+            input.input = "left";
+        else
+            input.input = "right";
+        end
+
+        if (input.frames_passed > input.delay_frames) then
+            return input.input;
+        end
+        input.frames_passed += 1;
+
     else
-        input_delay.input_detected = false;
-    end
-
-    -- if the delay is big enough, check for inputs now
-    if (current_frame - input_delay.frame_of_input >= input_delay.delay_margin) then
-        -- pressing both buttons does nothing on player 1, and
-        if (btn(player.left_button) and btn(player.right_button)) then
-            if (player == player_2) then
-                return "place";
-            elseif (player == player_1) then
-                return "idle";
-            end
-        end
-
-        -- pressing down button as player 1 places the chip
-        if (player == player_1 and btnp(3)) then
-            return "place";
-        end
-
-        -- pressing left or right button as either player moves the chip
-        if (btnp(player.right_button)) then
-            return "right";
-        elseif (btnp(player.left_button)) then
-            return "left";
-        end
+        input.detected = false;
+        input.frames_passed = 0;
+        input.input = "idle";
     end
     return "idle";
 end
