@@ -7,8 +7,8 @@ function _init()
 
     x_zero_pos = 128;
     y_zero_pos = 128;
-    x_zero_pos = 0;
-    y_zero_pos = 0;
+
+    debugging_mode = false;
 
     -- initialize empty field
     for col = 1,columns do
@@ -23,11 +23,9 @@ function _init()
     -- everything related to delaying the inputs for a smooth experience
     input = {
         frames_passed = 0,
-        detected = false,
         input = "idle",
-        delay_frames = 6,
+        delay_frames = 2,
     }
-
 
     -- initialize players
     player_1 = {
@@ -50,21 +48,31 @@ function _init()
 
     -- the active token only serves to draw the current active token.
     -- the actual position is saved in the player's cursor pos
-    x_coord, y_coord = calculate_coords_from_field(1,0);
+    local x_coord, y_coord = calculate_coords_from_field(1,0);
     active_token = {
         x_pos = x_coord,
         y_pos = y_coord,
         sprite = player_1.token_sprite,
     };
 
+    winning_tokens = {  x_1 = 0,
+                        y_1 = 0,
+                        x_2 = 0,
+                        y_2 = 0,
+                        x_3 = 0,
+                        y_3 = 0,
+                        x_4 = 0,
+                        y_4 = 0,
+    };
+
     -- redefine button press refresh rate
     poke(0x5f5c, 255);
 
-    _set_fps(15);
+    _set_fps(60);
 end
 
-function _update()
-    user_input = get_user_input();
+function _update60()
+    local user_input = get_user_input();
     if (user_input == "place") then
         if (player_1_to_move) then
             chosen_slot = player_1.cursor_pos;
@@ -76,6 +84,8 @@ function _update()
             send_token_down(chosen_slot);
         end
 
+        check_for_winner();
+
         player_1_to_move = not(player_1_to_move);
     else
         update_active_chip(user_input);
@@ -84,7 +94,7 @@ end
 
 function _draw()
     -- shift to debugger
-    if (btn(2)) then
+    if (debugging_mode) then
         x_zero_pos = 0;
         y_zero_pos = 0;
     else
@@ -103,9 +113,11 @@ end
 -- this function checks the entire grid for tokens that have already
 -- been placed and paints them accordingly
 function paint_placed_chips()
+    local sprite;
+
     for col = 1,columns do
         for row = 1,rows do
-            board_id = board[col][row];
+            local board_id = board[col][row];
             if (board_id == player_1.board_id) then
                 sprite = player_1.token_sprite;
             elseif (board_id == player_2.board_id) then
@@ -113,7 +125,7 @@ function paint_placed_chips()
             end
 
             if not (board_id == 0) then
-                x_pos, y_pos = calculate_coords_from_field(col, row);
+                local x_pos, y_pos = calculate_coords_from_field(col, row);
                 spr(sprite, x_pos, y_pos, 2, 2);
             end
         end
@@ -122,6 +134,7 @@ end
 
 -- determines where the cursor is currently located
 function update_active_chip(user_input)
+    local player;
 
     if (player_1_to_move) then
         player = player_1;
@@ -130,9 +143,9 @@ function update_active_chip(user_input)
     end
 
     if (user_input == "right") then
-        player.cursor_pos += 1;
+        player.cursor_pos = player.cursor_pos + 1;
     elseif (user_input == "left") then
-        player.cursor_pos -= 1;
+        player.cursor_pos = player.cursor_pos - 1;
     end
 
     if (player.cursor_pos <= 0) then
@@ -142,7 +155,7 @@ function update_active_chip(user_input)
     end
 
     -- write active token state to cursor
-    x_pos, y_pos = calculate_coords_from_field(player.cursor_pos,0);
+    local x_pos, y_pos = calculate_coords_from_field(player.cursor_pos,0);
     active_token.x_pos = x_pos;
     active_token.y_pos = y_pos;
     active_token.sprite = player.token_sprite;
@@ -150,8 +163,8 @@ end
 
 -- takes in board position and calculates pixel position for sprite
 function calculate_coords_from_field(column, row)
-    x_coord = 16*column + x_zero_pos - 8;
-    y_coord = 16*row + y_zero_pos + 16;
+    local x_coord = 16*column + x_zero_pos - 8;
+    local y_coord = 16*row + y_zero_pos + 16;
 
     if (row == 0) then
         y_coord = y_zero_pos + 4;
@@ -162,6 +175,8 @@ end
 
 -- this function returns 1 or 2, if one of these players won, and 0 otherwise
 function check_for_winner()
+    local winner_found;
+
     -- check columns
     for col=1,7,1 do
         for row=1,3,1 do
@@ -170,6 +185,7 @@ function check_for_winner()
             end
         end
     end
+
     -- check rows
     for col=1,4,1 do
         for row=1,7,1 do
@@ -178,6 +194,7 @@ function check_for_winner()
             end
         end
     end
+
     -- check diagonals \
     for col=1,4,1 do
         for row=1,3,1 do
@@ -186,6 +203,7 @@ function check_for_winner()
             end
         end
     end
+
     -- check diagonals /
     for col=4,7,1 do
         for row=1,3,1 do
@@ -207,7 +225,7 @@ end
 
 -- this function takes in for column row pairs and checks if their entries machtch up
 function are_equal(col1,row1,col2,row2,col3,row3,col4,row4)
-    first_entry = board[col1][row1];
+    local first_entry = board[col1][row1];
     if (not(board[col2][row2] == first_entry)) then
         return false;
     end
@@ -223,11 +241,17 @@ end
 -- this function takes in a column and returns the first free entry
 -- be careful, since this does not take into account columns that are already full
 function send_token_down(column)
-    row = 1;
+    local row = 0;
+    local current_slot, player;
     repeat
+        row = row + 1;
         current_slot = board[column][row];
-        row+=1;
-    until (not(current_slot == 0) or (row >= 6));
+        print(current_slot);
+    until (not(current_slot == 0) or (row >= 7));
+
+    -- correct one down again, because row is currently set to the first
+    -- encounter with chip
+    row = row - 1;
 
     if (player_1_to_move) then
         player = player_1;
@@ -252,30 +276,40 @@ end
 -- after one action has been performed, all buttons have to be released in order
 -- to input the next action
 function get_user_input()
+    local player;
+
     if (player_1_to_move) then
         player = player_1;
+        player.left_button_pressed = btn(0);
+        player.right_button_pressed = btn(1);
+        player.place_button_pressed = btn(3);
     else
         player = player_2;
+        player.left_button_pressed = btn(5);
+        player.right_button_pressed = btn(4);
+        player.place_button_pressed = btn(5) and btn(4);
     end
 
     -- if an input has been detected, increment the counter until the input shoots, else do nothing
     if (player.left_button_pressed or player.right_button_pressed or player.place_button_pressed) then
-        input_delay.input_detected = true;
         if (player.place_button_pressed) then
             input.input = "place";
         elseif (player.left_button_pressed) then
             input.input = "left";
-        else
+        elseif (player.right_button_pressed) then
             input.input = "right";
+        else
+            input.input = "idle";
         end
 
         if (input.frames_passed > input.delay_frames) then
+            input.frames_passed = 0;
             return input.input;
         end
-        input.frames_passed += 1;
+
+        input.frames_passed = input.frames_passed + 1;
 
     else
-        input.detected = false;
         input.frames_passed = 0;
         input.input = "idle";
     end
