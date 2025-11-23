@@ -19,6 +19,7 @@ function _init()
     end
 
     player_1_to_move = true;
+    winner_detected = false;
 
     -- everything related to delaying the inputs for a smooth experience
     input = {
@@ -32,18 +33,12 @@ function _init()
         token_sprite = 33,
         cursor_pos = 4,
         board_id = 1,
-        left_button_pressed = btn(0),
-        right_button_pressed = btn(1),
-        place_button_pressed = btn(3),
     };
 
     player_2 = {
         token_sprite = 35,
         cursor_pos = 4,
         board_id = 2,
-        left_button_pressed = btn(5),
-        right_button_pressed = btn(4),
-        place_button_pressed = btn(5) and btn(4),
     };
 
     -- the active token only serves to draw the current active token.
@@ -84,7 +79,11 @@ function _update60()
             send_token_down(chosen_slot);
         end
 
-        check_for_winner();
+        winner = check_for_winner();
+        if (not(winner == 0)) then
+            print("we have a winner");
+            winner_detected = true;
+        end
 
         player_1_to_move = not(player_1_to_move);
     else
@@ -106,6 +105,10 @@ function _draw()
     camera(x_zero_pos, y_zero_pos);
     paint_placed_chips();
     map();
+
+    if (winner_detected) then
+        spr(39, x_zero_pos, y_zero_pos, 2, 2);
+    end
 
     spr(active_token.sprite, active_token.x_pos, active_token.y_pos, 2,2);
 end
@@ -178,6 +181,7 @@ function check_for_winner()
     local winner_found;
 
     -- check columns
+    print("cols");
     for col=1,7,1 do
         for row=1,3,1 do
             if not winner_found then
@@ -187,8 +191,9 @@ function check_for_winner()
     end
 
     -- check rows
+    print("rows");
     for col=1,4,1 do
-        for row=1,7,1 do
+        for row=1,6,1 do
             if not winner_found then
                 winner_found = are_equal(col,row,col+1,row,col+2,row,col+3,row);
             end
@@ -196,6 +201,7 @@ function check_for_winner()
     end
 
     -- check diagonals \
+    print("left diag");
     for col=1,4,1 do
         for row=1,3,1 do
             if not winner_found then
@@ -205,6 +211,7 @@ function check_for_winner()
     end
 
     -- check diagonals /
+    print("right diag");
     for col=4,7,1 do
         for row=1,3,1 do
             if not winner_found then
@@ -223,9 +230,13 @@ function check_for_winner()
     end
 end
 
--- this function takes in for column row pairs and checks if their entries machtch up
-function are_equal(col1,row1,col2,row2,col3,row3,col4,row4)
+-- this function takes in four column row pairs and check if they all belong
+-- to one player
+function are_equal(col1, row1, col2, row2, col3, row3, col4, row4)
     local first_entry = board[col1][row1];
+    if (first_entry == 0) then
+        return false;
+    end
     if (not(board[col2][row2] == first_entry)) then
         return false;
     end
@@ -235,6 +246,10 @@ function are_equal(col1,row1,col2,row2,col3,row3,col4,row4)
     if (not(board[col4][row4] == first_entry)) then
         return false;
     end
+    print("check passed");
+    print(col1);
+    print(row1);
+    print(first_entry);
     return true;
 end
 
@@ -246,7 +261,6 @@ function send_token_down(column)
     repeat
         row = row + 1;
         current_slot = board[column][row];
-        print(current_slot);
     until (not(current_slot == 0) or (row >= 7));
 
     -- correct one down again, because row is currently set to the first
@@ -279,24 +293,22 @@ function get_user_input()
     local player;
 
     if (player_1_to_move) then
-        player = player_1;
-        player.left_button_pressed = btn(0);
-        player.right_button_pressed = btn(1);
-        player.place_button_pressed = btn(3);
+        left_button_pressed = btn(0);
+        right_button_pressed = btn(1);
+        place_button_pressed = btn(3);
     else
-        player = player_2;
-        player.left_button_pressed = btn(5);
-        player.right_button_pressed = btn(4);
-        player.place_button_pressed = btn(5) and btn(4);
+        left_button_pressed = btn(5);
+        right_button_pressed = btn(4);
+        place_button_pressed = btn(5) and btn(4);
     end
 
     -- if an input has been detected, increment the counter until the input shoots, else do nothing
-    if (player.left_button_pressed or player.right_button_pressed or player.place_button_pressed) then
-        if (player.place_button_pressed) then
+    if (left_button_pressed or right_button_pressed or place_button_pressed) then
+        if (place_button_pressed) then
             input.input = "place";
-        elseif (player.left_button_pressed) then
+        elseif (left_button_pressed) then
             input.input = "left";
-        elseif (player.right_button_pressed) then
+        elseif (right_button_pressed) then
             input.input = "right";
         else
             input.input = "idle";
