@@ -9,6 +9,9 @@ function _init()
     y_zero_pos = 128;
 
     debugging_mode = false;
+    if debugging_mode then
+        cls();
+    end
 
     -- initialize empty field
     for col = 1,columns do
@@ -50,14 +53,16 @@ function _init()
         sprite = player_1.token_sprite,
     };
 
-    winning_tokens = {  x_1 = 0,
-                        y_1 = 0,
-                        x_2 = 0,
-                        y_2 = 0,
-                        x_3 = 0,
-                        y_3 = 0,
-                        x_4 = 0,
-                        y_4 = 0,
+    winning_tokens = {
+        sprite = 39,
+        x_1 = 0,
+        y_1 = 0,
+        x_2 = 0,
+        y_2 = 0,
+        x_3 = 0,
+        y_3 = 0,
+        x_4 = 0,
+        y_4 = 0,
     };
 
     -- redefine button press refresh rate
@@ -67,27 +72,28 @@ function _init()
 end
 
 function _update60()
-    local user_input = get_user_input();
-    if (user_input == "place") then
-        if (player_1_to_move) then
-            chosen_slot = player_1.cursor_pos;
+    if not(winner_detected) then
+        local user_input = get_user_input();
+        if (user_input == "place") then
+            if (player_1_to_move) then
+                chosen_slot = player_1.cursor_pos;
+            else
+                chosen_slot = player_2.cursor_pos;
+            end
+
+            if (not (is_full(chosen_slot))) then
+                send_token_down(chosen_slot);
+            end
+            winner = check_for_winner();
+            if (not(winner == 0)) then
+                print("we have a winner");
+                winner_detected = true;
+            end
+
+            player_1_to_move = not(player_1_to_move);
         else
-            chosen_slot = player_2.cursor_pos;
+            update_active_chip(user_input);
         end
-
-        if (not (is_full(chosen_slot))) then
-            send_token_down(chosen_slot);
-        end
-
-        winner = check_for_winner();
-        if (not(winner == 0)) then
-            print("we have a winner");
-            winner_detected = true;
-        end
-
-        player_1_to_move = not(player_1_to_move);
-    else
-        update_active_chip(user_input);
     end
 end
 
@@ -106,11 +112,9 @@ function _draw()
     paint_placed_chips();
     map();
 
-    if (winner_detected) then
-        spr(39, x_zero_pos, y_zero_pos, 2, 2);
+    if not(winner_detected) then
+        spr(active_token.sprite, active_token.x_pos, active_token.y_pos, 2,2);
     end
-
-    spr(active_token.sprite, active_token.x_pos, active_token.y_pos, 2,2);
 end
 
 -- this function checks the entire grid for tokens that have already
@@ -130,6 +134,14 @@ function paint_placed_chips()
             if not (board_id == 0) then
                 local x_pos, y_pos = calculate_coords_from_field(col, row);
                 spr(sprite, x_pos, y_pos, 2, 2);
+            end
+
+            -- paint winning tokens over other tokens
+            if (winner_detected) then
+                spr(winning_tokens.sprite, winning_tokens.x_1, winning_tokens.y_1, 2, 2);
+                spr(winning_tokens.sprite, winning_tokens.x_2, winning_tokens.y_2, 2, 2);
+                spr(winning_tokens.sprite, winning_tokens.x_3, winning_tokens.y_3, 2, 2);
+                spr(winning_tokens.sprite, winning_tokens.x_4, winning_tokens.y_4, 2, 2);
             end
         end
     end
@@ -246,10 +258,14 @@ function are_equal(col1, row1, col2, row2, col3, row3, col4, row4)
     if (not(board[col4][row4] == first_entry)) then
         return false;
     end
-    print("check passed");
-    print(col1);
-    print(row1);
-    print(first_entry);
+
+    -- if we reach this point, we have a winner
+    -- write winning combination
+    winning_tokens.x_1, winning_tokens.y_1 = calculate_coords_from_field(col1, row1);
+    winning_tokens.x_2, winning_tokens.y_2 = calculate_coords_from_field(col2, row2);
+    winning_tokens.x_3, winning_tokens.y_3 = calculate_coords_from_field(col3, row3);
+    winning_tokens.x_4, winning_tokens.y_4 = calculate_coords_from_field(col4, row4);
+
     return true;
 end
 
