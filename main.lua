@@ -65,6 +65,10 @@ function _init()
         y_4 = 0,
     };
 
+    available_slots = {
+        1, 2, 3, 4, 5, 6, 7,
+    };
+
     -- redefine button press refresh rate
     poke(0x5f5c, 255);
 
@@ -143,6 +147,15 @@ function paint_placed_chips()
                 spr(winning_tokens.sprite, winning_tokens.x_3, winning_tokens.y_3, 2, 2);
                 spr(winning_tokens.sprite, winning_tokens.x_4, winning_tokens.y_4, 2, 2);
             end
+        end
+    end
+end
+
+function update_available_slots()
+    available_slots = {};
+    for column = 1,columns do
+        if (is_full()) then
+            available_slots.add(column);
         end
     end
 end
