@@ -28,7 +28,7 @@ function _init()
     input = {
         frames_passed = 0,
         input = "idle",
-        delay_frames = 2,
+        delay_frames = 6,
     }
 
     -- initialize players
