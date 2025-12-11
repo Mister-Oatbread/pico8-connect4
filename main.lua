@@ -21,8 +21,11 @@ function _init()
         end
     end
 
+    -- misc
     player_1_to_move = true;
     winner_detected = false;
+    victory_sound = 60;
+    victory_sound_started = false;
 
     -- everything related to delaying the inputs for a smooth experience
     input = {
@@ -34,12 +37,14 @@ function _init()
     -- initialize players
     player_1 = {
         token_sprite = 33,
+        sound = 63,
         cursor_pos = 4,
         board_id = 1,
     };
 
     player_2 = {
         token_sprite = 35,
+        sound = 62,
         cursor_pos = 4,
         board_id = 2,
     };
@@ -52,6 +57,21 @@ function _init()
         y_pos = y_coord,
         sprite = player_1.token_sprite,
     };
+
+    songs = {
+        switch_should_happen = true,
+        current_song_index = 1,
+        song_parts = {
+            8,
+            4,
+            0,
+        },
+        thresholds = {
+            0,
+            4,
+            8,
+        },
+    }
 
     winning_tokens = {
         sprite = 39,
@@ -76,13 +96,18 @@ function _init()
 end
 
 function _update60()
+
+    handle_music();
+
     if not(winner_detected) then
         local user_input = get_user_input();
         if (user_input == "place") then
             if (player_1_to_move) then
                 chosen_slot = player_1.cursor_pos;
+                sfx(player_1.sound);
             else
                 chosen_slot = player_2.cursor_pos;
+                sfx(player_2.sound);
             end
 
             if (not (is_full(chosen_slot))) then
@@ -151,6 +176,8 @@ function paint_placed_chips()
     end
 end
 
+-- checks which columns are not already full, and stores information
+-- in "available slots"
 function update_available_slots()
     available_slots = {};
     for column = 1,columns do
@@ -158,6 +185,46 @@ function update_available_slots()
             available_slots.add(column);
         end
     end
+end
+
+-- this function takes care of playing music
+function handle_music()
+    if not(winner_detected) then
+        number_of_tokens = count_placed_tokens();
+
+        -- if enough tokens have been placed, change song index
+        for index = 1,#(songs.thresholds) do
+            if (number_of_tokens >= songs.thresholds[index]) then
+                songs.current_song_index = index;
+            end
+        end
+        print(songs.current_song_index);
+
+        -- if no song is playing, then do something
+        if (stat(16) == -1) then
+            next_song = songs.song_parts[songs.current_song_index];
+            music(next_song);
+        end
+    else
+        if not(victory_sound_started) then
+            music(victory_sound);
+            victory_sound_started = true;
+        end
+    end
+end
+
+-- this function returns the number of tokens that have already been placed
+function count_placed_tokens()
+    number_of_tokens = 0;
+
+    for col = 1,columns do
+        for row = 1,rows do
+            if not (board[col][row] == 0) then
+                number_of_tokens = number_of_tokens + 1;
+            end
+        end
+    end
+    return number_of_tokens;
 end
 
 -- determines where the cursor is currently located
