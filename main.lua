@@ -1,14 +1,25 @@
 
 
+-- hello :3
 function _init()
+    debugging_mode = false;
+    use_sound = true;
+
     board = {};
     rows = 6;
     columns = 7;
 
-    x_zero_pos = 128;
-    y_zero_pos = 128;
+    if (debugging_mode) then
+        x_zero_pos = 0;
+        y_zero_pos = 0;
+    else
+        x_zero_pos = 128;
+        y_zero_pos = 128;
+    end
 
-    debugging_mode = false;
+    camera_x_pos = x_zero_pos;
+    camera_y_pos = y_zero_pos;
+
     if debugging_mode then
         cls();
     end
@@ -73,6 +84,14 @@ function _init()
         },
     }
 
+    drop_animation = {
+        active = false,
+        frame = 0,
+        offsets = {
+            1, 2, 4, 2, 1,
+        },
+    }
+
     winning_tokens = {
         sprite = 39,
         x_1 = 0,
@@ -97,17 +116,24 @@ end
 
 function _update60()
 
-    handle_music();
+    if (use_sound) then
+        handle_music();
+    end
 
     if not(winner_detected) then
         local user_input = get_user_input();
         if (user_input == "place") then
+            drop_animation.active = true;
             if (player_1_to_move) then
                 chosen_slot = player_1.cursor_pos;
-                sfx(player_1.sound);
+                if (use_sound) then
+                    sfx(player_1.sound);
+                end
             else
                 chosen_slot = player_2.cursor_pos;
-                sfx(player_2.sound);
+                if (use_sound) then
+                    sfx(player_2.sound);
+                end
             end
 
             if (not (is_full(chosen_slot))) then
@@ -128,21 +154,32 @@ end
 
 function _draw()
     -- shift to debugger
-    if (debugging_mode) then
-        x_zero_pos = 0;
-        y_zero_pos = 0;
-    else
-        x_zero_pos = 128;
-        y_zero_pos = 128;
+    if not(debugging_mode) then
         cls();
     end
+    move_camera();
 
-    camera(x_zero_pos, y_zero_pos);
+    camera(camera_x_pos, camera_y_pos);
     paint_placed_chips();
     map();
 
     if not(winner_detected) then
         spr(active_token.sprite, active_token.x_pos, active_token.y_pos, 2,2);
+    end
+end
+
+-- this function takes care of animating a token that has been dropped
+function move_camera()
+    if (drop_animation.active) then
+        drop_animation.frame = drop_animation.frame + 1;
+        camera_y_pos = y_zero_pos - drop_animation.offsets[drop_animation.frame];
+    else
+        camera_y_pos = y_zero_pos;
+    end
+
+    if (drop_animation.frame == #(drop_animation.offsets)) then
+        drop_animation.active = false;
+        drop_animation.frame = 0;
     end
 end
 
