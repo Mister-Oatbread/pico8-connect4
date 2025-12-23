@@ -35,6 +35,7 @@ function _init()
     player_1_to_move = true;
     winner_detected = false;
     board_is_full = false;
+    error_sound = 59;
     victory_sound = 60;
     victory_sound_started = false;
 
@@ -116,12 +117,12 @@ function _init()
         },
 
         animation_frame = 0,
-        total_frames = 60,
+        total_frames = 120,
         critical_frames = {
-            arrow_down = 15,
-            arrow_up = 45,
-            empty_token_down = 30,
-            empty_token_up = 0,
+            30,
+            90,
+            60,
+            0,
         },
 
         animation_distance = 3,
@@ -130,15 +131,15 @@ function _init()
     };
 
     slot_animation_positions = {
-        arrow_down = y_zero_pos + slot_indicator.arrow_offset + slot_indicator.animation_distance,
-        arrow_up = y_zero_pos + slot_indicator.arrow_offset,
-        empty_token_down = y_zero_pos + slot_indicator.empty_token_offset + slot_indicator.animation_distance,
-        empty_token_up = y_zero_pos + slot_indicator.empty_token_offset,
+        y_zero_pos + slot_indicator.arrow_offset + slot_indicator.animation_distance,
+        y_zero_pos + slot_indicator.arrow_offset,
+        y_zero_pos + slot_indicator.empty_token_offset + slot_indicator.animation_distance,
+        y_zero_pos + slot_indicator.empty_token_offset,
     };
 
     slot_current_positions = {
-        arrow_pos = slot_animation_positions.arrow_up,
-        empty_token_pos = slot_animation_positions.empty_token_up,
+        slot_animation_positions = slot_animation_positions[2],
+        slot_animation_positions = slot_animation_positions[4],
     };
 
     -- redefine button press refresh rate
@@ -156,23 +157,27 @@ function _update60()
     board_is_full = is_board_full();
     if not(winner_detected) and not(board_is_full) then
         local user_input = get_user_input();
+
+        if player_1_to_move then
+            player = player_1;
+        else
+            player = player_2;
+        end
+
         if (user_input == "place") then
             drop_animation.active = true;
-            if (player_1_to_move) then
-                chosen_slot = player_1.cursor_pos;
-                if (use_sound) then
-                    sfx(player_1.sound);
-                end
-            else
-                chosen_slot = player_2.cursor_pos;
-                if (use_sound) then
-                    sfx(player_2.sound);
-                end
-            end
 
+            chosen_slot = player.cursor_pos;
             if (not (is_full(chosen_slot))) then
                 send_token_down(chosen_slot);
+                if (use_sound) then
+                    sfx(player.sound);
+                end
+            else
+                sfx(error_sound);
+                player_1_to_move = not(player_1_to_move);
             end
+
             winner = check_for_winner();
             if (not(winner == 0)) then
                 print("we have a winner");
@@ -200,7 +205,7 @@ function _draw()
     map();
 
     if not(winner_detected) then
-        spr(active_token.sprite, active_token.x_pos, active_token.y_pos, 2,2);
+        spr(active_token.sprite, active_token.x_pos, slot_current_positions[2], 2,2);
     end
 end
 

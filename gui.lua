@@ -48,9 +48,9 @@ end
 -- paint the available slot symbols including animation
 function paint_slot_indicators()
     for index, slot_number in ipairs(slot_indicator.available_slots) do
-        x_pos, y_pos = calculate_coords_from_field(slot_number, 0);
-        spr(slot_indicator.arrow_sprite, x_pos, slot_current_positions.arrow_pos, 2, 2);
-        spr(slot_indicator.empty_token_sprite, x_pos, slot_current_positions.empty_token_pos, 2, 2);
+        x_pos, _ = calculate_coords_from_field(slot_number, 0);
+        spr(slot_indicator.arrow_sprite, x_pos, slot_current_positions[1], 2, 2);
+        spr(slot_indicator.empty_token_sprite, x_pos, slot_current_positions[2], 2, 2);
     end
 end
 
@@ -71,9 +71,9 @@ function update_slot_indicators()
     end
 
     -- update positions
-    for index, critical_frame in ipairs(slot_indicator.critical_frames) do
+    for index, critical_frame in pairs(slot_indicator.critical_frames) do
         if (slot_indicator.animation_frame == critical_frame) then
-            slot_current_positions[math.ceil(index/2)] = slot_animation_positions[index];
+            slot_current_positions[ceil(index/2)] = slot_animation_positions[index];
         end
     end
 end
