@@ -42,7 +42,8 @@ function _init()
     input = {
         frames_passed = 0,
         input = "idle",
-        delay_frames = 4,
+        delay_frames = 2,
+        lock = false,
     }
 
     -- initialize players
@@ -124,8 +125,8 @@ function _init()
         },
 
         animation_distance = 3,
-        arrow_offset = 20,
-        empty_token_offset = 10,
+        arrow_offset = 12,
+        empty_token_offset = 4,
     };
 
     slot_animation_positions = {
@@ -136,9 +137,9 @@ function _init()
     };
 
     slot_current_positions = {
-        arrow_pos = slot_animation_positions[2],
-        empty_token_pos = slot_animation_positions[4],
-    },
+        arrow_pos = slot_animation_positions.arrow_up,
+        empty_token_pos = slot_animation_positions.empty_token_up,
+    };
 
     -- redefine button press refresh rate
     poke(0x5f5c, 255);
@@ -152,6 +153,7 @@ function _update60()
         handle_music();
     end
 
+    board_is_full = is_board_full();
     if not(winner_detected) and not(board_is_full) then
         local user_input = get_user_input();
         if (user_input == "place") then

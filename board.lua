@@ -31,6 +31,16 @@ function calculate_coords_from_field(column, row)
     return x_coord, y_coord;
 end
 
+-- this function returns whether a position is contained in the available slots list
+function is_legal_column(column)
+    for _, available_column in pairs(slot_indicator.available_slots) do
+        if (column == available_column) then
+            return true;
+        end
+    end
+    return false;
+end
+
 -- this function returns 1 or 2, if one of these players won, and 0 otherwise
 function check_for_winner()
     local winner_found;

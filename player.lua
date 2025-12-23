@@ -18,7 +18,7 @@ function get_user_input()
     end
 
     -- if an input has been detected, increment the counter until the input shoots, else do nothing
-    if (left_button_pressed or right_button_pressed or place_button_pressed) then
+    if (left_button_pressed or right_button_pressed or place_button_pressed) and not(input.lock) then
         if (place_button_pressed) then
             input.input = "place";
         elseif (left_button_pressed) then
@@ -31,11 +31,13 @@ function get_user_input()
 
         if (input.frames_passed > input.delay_frames) then
             input.frames_passed = 0;
+            input.lock = true;
             return input.input;
         end
-
         input.frames_passed = input.frames_passed + 1;
 
+    elseif not( left_button_pressed or right_button_pressed or place_button_pressed) then
+        input.lock = false;
     else
         input.frames_passed = 0;
         input.input = "idle";
@@ -55,6 +57,7 @@ function update_active_chip(user_input)
 
     if (user_input == "right") then
         player.cursor_pos = player.cursor_pos + 1;
+
     elseif (user_input == "left") then
         player.cursor_pos = player.cursor_pos - 1;
     end
@@ -63,6 +66,16 @@ function update_active_chip(user_input)
         player.cursor_pos = 7;
     elseif (player.cursor_pos >= 8) then
         player.cursor_pos = 1;
+    end
+
+    if (user_input == "right") then
+        while not(is_legal_column(player.cursor_pos)) do
+            player.cursor_pos = player.cursor_pos + 1;
+        end
+    elseif (user_input == "left") then
+        while not(is_legal_column(player.cursor_pos)) do
+            player.cursor_pos = player.cursor_pos - 1;
+        end
     end
 
     -- write active token state to cursor

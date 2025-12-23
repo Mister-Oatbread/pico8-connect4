@@ -15,15 +15,6 @@ function move_camera()
     end
 end
 
--- paint the available slot symbols including animation
-function paint_slot_indicators()
-    for name,slot in slot_indicator.available_slots do
-        x_pos, y_pos = calculate_coords_from_field(slot, 0);
-        spr(slot_indicator.arrow_sprite, x_pos, slot_current_positions.arrow_pos, 2, 2);
-        spr(slot_indicator.epty_token_sprite, x_pos, slot_current_positions.empty_token_pos, 2, 2);
-    end
-end
-
 -- this function checks the entire grid for tokens that have already
 -- been placed and paints them accordingly
 function paint_placed_chips()
@@ -54,24 +45,34 @@ function paint_placed_chips()
     end
 end
 
+-- paint the available slot symbols including animation
+function paint_slot_indicators()
+    for index, slot_number in ipairs(slot_indicator.available_slots) do
+        x_pos, y_pos = calculate_coords_from_field(slot_number, 0);
+        spr(slot_indicator.arrow_sprite, x_pos, slot_current_positions.arrow_pos, 2, 2);
+        spr(slot_indicator.empty_token_sprite, x_pos, slot_current_positions.empty_token_pos, 2, 2);
+    end
+end
+
 -- this function updates all empty positions and calculates the animation
 function update_slot_indicators()
     slot_indicator.animation_frame = slot_indicator.animation_frame + 1;
 
+    -- wrap back to 0
     if (slot_indicator.animation_frame >= slot_indicator.total_frames) then
         slot_indicator.animation_frame = 0;
     end
 
-    -- update all available slots
-    for name,slot in slot_indicator.available_slots do
-        if is_full(slot) then
-            slot_indicator.available_slots.remove(slot);
+    -- update all available columns
+    for index, slot_number in ipairs(slot_indicator.available_slots) do
+        if is_full(slot_number) then
+            del(slot_indicator.available_slots, slot_number);
         end
     end
 
     -- update positions
-    for index = 1,4 do
-        if (slot_indicator.animation_frame == slot_indicator.critical_frames[index]) then
+    for index, critical_frame in ipairs(slot_indicator.critical_frames) do
+        if (slot_indicator.animation_frame == critical_frame) then
             slot_current_positions[math.ceil(index/2)] = slot_animation_positions[index];
         end
     end
