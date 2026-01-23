@@ -2,7 +2,7 @@
 
 function _init()
     debugging_mode = false;
-    use_sound = false;
+    use_sound = true;
 
     -- valid inputs:
     -- "title" for the title screen
@@ -52,14 +52,18 @@ function _init()
     -- initialize players
     player_1 = {
         token_sprite = 33,
-        sound = 63,
+        color = 8,
+        sound = 62,
+        swipe_sound = 63,
         cursor_pos = 4,
         board_id = 1,
     };
 
     player_2 = {
         token_sprite = 35,
+        color = 9,
         sound = 62,
+        swipe_song = 63,
         cursor_pos = 4,
         board_id = 2,
     };
@@ -129,6 +133,30 @@ function _init()
         },
     }
 
+    tutorial = {
+        finished = false;
+        current_step = 1;
+        instructions = {
+            "⬅️",
+            "➡️",
+            "⬇️",
+            "❎",
+            "🅾️",
+            "❎+🅾️",
+        },
+        needed_moves = {
+            "left",
+            "right",
+            "place",
+        },
+        player = {
+            {id=player_1, name="player 1", x_offset=10},
+            {id=player_2, name="player 2", x_offset=70},
+        },
+        frame = 0,
+        message = "'good luck player 1' -oatbread",
+    }
+
     winning_tokens = {
         sprite = 39,
         x_1 = 0,
@@ -160,9 +188,9 @@ function _init()
             0,
         },
 
-        animation_distance = 1,
-        arrow_offset = 12,
-        empty_token_offset = 4,
+        animation_distance = 2,
+        arrow_offset = 10,
+        empty_token_offset = 2,
     };
 
     slot_animation_positions = {
@@ -173,8 +201,8 @@ function _init()
     };
 
     slot_current_positions = {
-        slot_animation_positions = slot_animation_positions[2],
-        slot_animation_positions = slot_animation_positions[4],
+        slot_animation_positions[2],
+        slot_animation_positions[4],
     };
 
     -- redefine button press refresh rate
@@ -195,11 +223,15 @@ function _update60()
 
         if (current_canvas == "title") then
             if (user_input == "place") then
-                current_canvas = "field";
+                current_canvas = "tutorial";
             end
 
-        -- elseif (current_canvas == "tutorial") then
-
+        elseif (current_canvas == "tutorial") then
+            step_through_tutorial(user_input);
+            update_active_chip(user_input);
+            if (tutorial.finished) then
+                current_canvas = "field";
+            end
 
         elseif (current_canvas == "field") then
             if player_1_to_move then
@@ -231,6 +263,11 @@ function _update60()
                 player_1_to_move = not(player_1_to_move);
             else
                 update_active_chip(user_input);
+                if (user_input == "right") or (user_input == "left") then
+                    if (use_sound) then
+                        sfx(player.swipe_sound);
+                    end
+                end
             end
             update_slot_indicators();
         end
@@ -247,6 +284,10 @@ function _draw()
 
     if (current_canvas == "title") then
         handle_title_screen_animations();
+
+    elseif (current_canvas == "tutorial") then
+        display_tutorial();
+        spr(active_token.sprite, active_token.x_pos, slot_current_positions[2], 2,2);
 
     elseif (current_canvas == "field") then
         paint_placed_chips();

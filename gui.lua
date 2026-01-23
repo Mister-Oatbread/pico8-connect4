@@ -7,8 +7,8 @@ function update_canvas_position()
         x_zero_pos = 284;
         y_zero_pos = 148;
     elseif (current_canvas == "tutorial") then
-        x_zero_pos = 128;
-        y_zero_pos = 0;
+        x_zero_pos = 0;
+        y_zero_pos = 128;
     elseif (current_canvas == "field") then
         x_zero_pos = 128;
         y_zero_pos = 128;
@@ -43,9 +43,35 @@ function handle_title_screen_animations()
     title_screen.frame = title_screen.frame + 1;
 end
 
--- this function steps through the tutorial
+-- this function takes care of guiding the users through the tutorial
+function step_through_tutorial(user_input)
+    local needed_move = tutorial.needed_moves[(tutorial.current_step-1)%3+1];
+    local player = tutorial.player[ceil(tutorial.current_step/3)];
+    if (user_input == needed_move) then
+        if (user_input == "place") then
+            player_1_to_move = not(player_1_to_move);
+        end
+
+        if not(user_input == needed_move) and not(user_input == "idle") then
+            if (use_sound) then
+                sfx(error_sound);
+            end
+        end
+        if (user_input == "left") or (user_input == "right") then
+            sfx(tutorial.player
+        end
+        if (tutorial.current_step == 6) then
+            tutorial.finished = true;
+        end
+
+        tutorial.current_step = tutorial.current_step + 1;
+    end
+end
+-- this function displays the current state of the tutorial
 function display_tutorial()
-    return tutorial_finished;
+    local player = tutorial.player[ceil(tutorial.current_step/3)];
+    print(player.name, x_zero_pos+player.x_offset, y_zero_pos+30, player.id.color);
+    print(tutorial.instructions[tutorial.current_step], x_zero_pos+player.x_offset+10, y_zero_pos+50, player.id.color);
 end
 
 -- this function takes care of animating a token that has been dropped
@@ -53,8 +79,7 @@ function move_camera()
     camera_x_pos = x_zero_pos;
     camera_y_pos = y_zero_pos;
 
-
-    if (current_canvas == "field") then
+    if (current_canvas == "field" or current_canvas == "tutorial") then
         if (drop_animation.active) then
             drop_animation.frame = drop_animation.frame + 1;
             camera_y_pos = y_zero_pos - drop_animation.offsets[drop_animation.frame];
