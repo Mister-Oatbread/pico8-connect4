@@ -1,17 +1,83 @@
 
 
--- this function takes care of animating a token that has been dropped
-function move_camera()
-    if (drop_animation.active) then
-        drop_animation.frame = drop_animation.frame + 1;
-        camera_y_pos = y_zero_pos - drop_animation.offsets[drop_animation.frame];
+-- this function moves the x and y position to the
+-- valid arguments are:
+function update_canvas_position()
+    if (current_canvas == "title") then
+        x_zero_pos = 284;
+        y_zero_pos = 148;
+    elseif (current_canvas == "tutorial") then
+        x_zero_pos = 128;
+        y_zero_pos = 0;
+    elseif (current_canvas == "field") then
+        x_zero_pos = 128;
+        y_zero_pos = 128;
+    elseif (current_canvas == "black") then
+        x_zero_pos = 0;
+        y_zero_pos = 128;
     else
-        camera_y_pos = y_zero_pos;
+        print("what are you doing man");
     end
 
-    if (drop_animation.frame == #(drop_animation.offsets)) then
-        drop_animation.active = false;
-        drop_animation.frame = 0;
+    if (debugging_mode) then
+        x_zero_pos = 0;
+        y_zero_pos = 0;
+    end
+end
+
+-- this function takes care of displaying the title screen dialogue
+function handle_title_screen_animations()
+    -- randomize tokens
+    for token_no = 1,#title_screen.token_positions do
+        local current_token = title_screen.token_positions[token_no];
+        if (current_token.y >= title_screen.token_end_position) then
+            current_token.x = x_zero_pos + rnd(128);
+            current_token.y = title_screen.token_start_position;
+        elseif (title_screen.frame%2==0) then
+            current_token.y = current_token.y + 1;
+        end
+        spr(current_token.sprite, current_token.x, current_token.y, 2, 2);
+    end
+
+    print("press ⬇️ to start", 315, 250, 12);
+    title_screen.frame = title_screen.frame + 1;
+end
+
+-- this function steps through the tutorial
+function display_tutorial()
+    return tutorial_finished;
+end
+
+-- this function takes care of animating a token that has been dropped
+function move_camera()
+    camera_x_pos = x_zero_pos;
+    camera_y_pos = y_zero_pos;
+
+
+    if (current_canvas == "field") then
+        if (drop_animation.active) then
+            drop_animation.frame = drop_animation.frame + 1;
+            camera_y_pos = y_zero_pos - drop_animation.offsets[drop_animation.frame];
+        end
+        if (slide_animation.active) then
+            slide_animation.frame = slide_animation.frame + 1;
+            local direction = 0;
+            if (slide_animation.goes_to_the_right) then
+                direction = -1;
+            else
+                direction = 1;
+            end
+            camera_x_pos = x_zero_pos + direction* slide_animation.offsets[slide_animation.frame];
+        end
+
+        if (drop_animation.frame == #(drop_animation.offsets)) then
+            drop_animation.active = false;
+            drop_animation.frame = 0;
+        end
+        if (slide_animation.frame == #(slide_animation.offsets)) then
+            slide_animation.active = false;
+            slide_animation.frame = 0;
+        end
     end
 end
 

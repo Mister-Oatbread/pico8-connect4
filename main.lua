@@ -2,19 +2,21 @@
 
 function _init()
     debugging_mode = false;
-    use_sound = true;
+    use_sound = false;
+
+    -- valid inputs:
+    -- "title" for the title screen
+    -- "tutorial" for the guide on everything
+    -- "field" for the playing field
+    -- "black" for a blank screen
+    current_canvas = "title"
 
     board = {};
     rows = 6;
     columns = 7;
 
-    if (debugging_mode) then
-        x_zero_pos = 0;
-        y_zero_pos = 0;
-    else
-        x_zero_pos = 128;
-        y_zero_pos = 128;
-    end
+    x_zero_pos = 128;
+    y_zero_pos = 128;
 
     camera_x_pos = x_zero_pos;
     camera_y_pos = y_zero_pos;
@@ -90,7 +92,40 @@ function _init()
         active = false,
         frame = 0,
         offsets = {
-            1, 2, 4, 2, 1,
+            1,2,4,2,1,
+        },
+    }
+
+    slide_animation = {
+        active = false,
+        goes_to_the_right = true,
+        frame = 0,
+        offsets = {
+            1,2,1,
+        }
+    }
+
+    title_screen = {
+        frame = 0,
+        token_start_position = 130,
+        token_end_position = 290,
+        token_positions = {
+            {x=280 + rnd(120), y=  0, sprite=player_1.token_sprite},
+            {x=280 + rnd(120), y= 10, sprite=player_2.token_sprite},
+            {x=280 + rnd(120), y= 20, sprite=player_1.token_sprite},
+            {x=280 + rnd(120), y= 30, sprite=player_2.token_sprite},
+            {x=280 + rnd(120), y= 40, sprite=player_1.token_sprite},
+            {x=280 + rnd(120), y= 50, sprite=player_2.token_sprite},
+            {x=280 + rnd(120), y= 60, sprite=player_1.token_sprite},
+            {x=280 + rnd(120), y= 70, sprite=player_2.token_sprite},
+            {x=280 + rnd(120), y= 80, sprite=player_1.token_sprite},
+            {x=280 + rnd(120), y= 90, sprite=player_2.token_sprite},
+            {x=280 + rnd(120), y=100, sprite=player_1.token_sprite},
+            {x=280 + rnd(120), y=110, sprite=player_2.token_sprite},
+            {x=280 + rnd(120), y=120, sprite=player_1.token_sprite},
+            {x=280 + rnd(120), y=130, sprite=player_2.token_sprite},
+            {x=280 + rnd(120), y=140, sprite=player_1.token_sprite},
+            {x=280 + rnd(120), y=150, sprite=player_2.token_sprite},
         },
     }
 
@@ -125,7 +160,7 @@ function _init()
             0,
         },
 
-        animation_distance = 3,
+        animation_distance = 1,
         arrow_offset = 12,
         empty_token_offset = 4,
     };
@@ -158,37 +193,47 @@ function _update60()
     if not(winner_detected) and not(board_is_full) then
         local user_input = get_user_input();
 
-        if player_1_to_move then
-            player = player_1;
-        else
-            player = player_2;
-        end
+        if (current_canvas == "title") then
+            if (user_input == "place") then
+                current_canvas = "field";
+            end
 
-        if (user_input == "place") then
-            drop_animation.active = true;
+        -- elseif (current_canvas == "tutorial") then
 
-            chosen_slot = player.cursor_pos;
-            if (not (is_full(chosen_slot))) then
-                send_token_down(chosen_slot);
-                if (use_sound) then
-                    sfx(player.sound);
-                end
+
+        elseif (current_canvas == "field") then
+            if player_1_to_move then
+                player = player_1;
             else
-                sfx(error_sound);
+                player = player_2;
+            end
+
+            if (user_input == "place") then
+                chosen_slot = player.cursor_pos;
+                if (not (is_full(chosen_slot))) then
+                    send_token_down(chosen_slot);
+                    if (use_sound) then
+                        sfx(player.sound);
+                    end
+                else
+                    if (use_sound) then
+                        sfx(error_sound);
+                    end
+                    player_1_to_move = not(player_1_to_move);
+                end
+
+                winner = check_for_winner();
+                if (not(winner == 0)) then
+                    print("we have a winner");
+                    winner_detected = true;
+                end
+
                 player_1_to_move = not(player_1_to_move);
+            else
+                update_active_chip(user_input);
             end
-
-            winner = check_for_winner();
-            if (not(winner == 0)) then
-                print("we have a winner");
-                winner_detected = true;
-            end
-
-            player_1_to_move = not(player_1_to_move);
-        else
-            update_active_chip(user_input);
+            update_slot_indicators();
         end
-        update_slot_indicators();
     end
 end
 
@@ -197,16 +242,22 @@ function _draw()
     if not(debugging_mode) then
         cls();
     end
+    update_canvas_position()
     move_camera();
 
-    camera(camera_x_pos, camera_y_pos);
-    paint_placed_chips();
-    paint_slot_indicators();
-    map();
+    if (current_canvas == "title") then
+        handle_title_screen_animations();
 
-    if not(winner_detected) then
-        spr(active_token.sprite, active_token.x_pos, slot_current_positions[2], 2,2);
+    elseif (current_canvas == "field") then
+        paint_placed_chips();
+
+        if not(winner_detected) then
+            paint_slot_indicators();
+            spr(active_token.sprite, active_token.x_pos, slot_current_positions[2], 2,2);
+        end
     end
+    camera(camera_x_pos, camera_y_pos);
+    map();
 end
 
 

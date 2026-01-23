@@ -32,6 +32,18 @@ function get_user_input()
         if (input.frames_passed > input.delay_frames) then
             input.frames_passed = 0;
             input.lock = true;
+
+            if (input.input == "place") then
+                drop_animation.active = true;
+            elseif (input.input == "right") then
+                slide_animation.active = true;
+                slide_animation.goes_to_the_right = true;
+            elseif (input.input == "left") then
+                slide_animation.active = true;
+                slide_animation.active = true;
+                slide_animation.goes_to_the_right = false;
+            end
+
             return input.input;
         end
         input.frames_passed = input.frames_passed + 1;

@@ -11,7 +11,6 @@ function handle_music()
                 songs.current_song_index = index;
             end
         end
-        print(songs.current_song_index);
 
         -- if no song is playing, then do something
         if (stat(16) == -1) then
