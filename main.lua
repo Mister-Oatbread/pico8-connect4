@@ -39,6 +39,7 @@ function _init()
     board_is_full = false;
     error_sound = 59;
     victory_sound = 60;
+    constant_bass = 24;
     victory_sound_started = false;
 
     -- everything related to delaying the inputs for a smooth experience
@@ -63,7 +64,7 @@ function _init()
         token_sprite = 35,
         color = 9,
         sound = 62,
-        swipe_song = 63,
+        swipe_sound = 63,
         cursor_pos = 4,
         board_id = 2,
     };
@@ -114,35 +115,36 @@ function _init()
         token_start_position = 130,
         token_end_position = 290,
         token_positions = {
-            {x=280 + rnd(120), y=  0, sprite=player_1.token_sprite},
-            {x=280 + rnd(120), y= 10, sprite=player_2.token_sprite},
-            {x=280 + rnd(120), y= 20, sprite=player_1.token_sprite},
-            {x=280 + rnd(120), y= 30, sprite=player_2.token_sprite},
-            {x=280 + rnd(120), y= 40, sprite=player_1.token_sprite},
-            {x=280 + rnd(120), y= 50, sprite=player_2.token_sprite},
-            {x=280 + rnd(120), y= 60, sprite=player_1.token_sprite},
-            {x=280 + rnd(120), y= 70, sprite=player_2.token_sprite},
-            {x=280 + rnd(120), y= 80, sprite=player_1.token_sprite},
-            {x=280 + rnd(120), y= 90, sprite=player_2.token_sprite},
-            {x=280 + rnd(120), y=100, sprite=player_1.token_sprite},
-            {x=280 + rnd(120), y=110, sprite=player_2.token_sprite},
-            {x=280 + rnd(120), y=120, sprite=player_1.token_sprite},
-            {x=280 + rnd(120), y=130, sprite=player_2.token_sprite},
-            {x=280 + rnd(120), y=140, sprite=player_1.token_sprite},
-            {x=280 + rnd(120), y=150, sprite=player_2.token_sprite},
+            {x=280 + rnd(120), y=  0, sprite=player_1.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y= 10, sprite=player_2.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y= 20, sprite=player_1.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y= 30, sprite=player_2.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y= 40, sprite=player_1.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y= 50, sprite=player_2.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y= 60, sprite=player_1.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y= 70, sprite=player_2.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y= 80, sprite=player_1.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y= 90, sprite=player_2.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y=100, sprite=player_1.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y=110, sprite=player_2.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y=120, sprite=player_1.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y=130, sprite=player_2.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y=140, sprite=player_1.token_sprite, speed=ceil(rnd(3))},
+            {x=280 + rnd(120), y=150, sprite=player_2.token_sprite, speed=ceil(rnd(3))},
         },
     }
 
     tutorial = {
         finished = false;
         current_step = 1;
+        update_chip = true;
         instructions = {
             "⬅️",
             "➡️",
             "⬇️",
-            "❎",
             "🅾️",
-            "❎+🅾️",
+            "❎",
+            "🅾️+❎",
         },
         needed_moves = {
             "left",
@@ -180,11 +182,11 @@ function _init()
         },
 
         animation_frame = 0,
-        total_frames = 120,
+        total_frames = 160,
         critical_frames = {
-            30,
-            90,
-            60,
+            40,
+            120,
+            80,
             0,
         },
 
@@ -228,9 +230,13 @@ function _update60()
 
         elseif (current_canvas == "tutorial") then
             step_through_tutorial(user_input);
-            update_active_chip(user_input);
+            if (tutorial.update_chip) then
+                update_active_chip(user_input);
+                tutorial.update_chip = false;
+            end
             if (tutorial.finished) then
                 current_canvas = "field";
+                music(-1);
             end
 
         elseif (current_canvas == "field") then

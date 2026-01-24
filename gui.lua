@@ -30,12 +30,15 @@ function handle_title_screen_animations()
     -- randomize tokens
     for token_no = 1,#title_screen.token_positions do
         local current_token = title_screen.token_positions[token_no];
+
         if (current_token.y >= title_screen.token_end_position) then
             current_token.x = x_zero_pos + rnd(128);
             current_token.y = title_screen.token_start_position;
-        elseif (title_screen.frame%2==0) then
+            current_token.speed = ceil(rnd(3));
+        elseif (title_screen.frame%current_token.speed==0) then
             current_token.y = current_token.y + 1;
         end
+
         spr(current_token.sprite, current_token.x, current_token.y, 2, 2);
     end
 
@@ -48,25 +51,31 @@ function step_through_tutorial(user_input)
     local needed_move = tutorial.needed_moves[(tutorial.current_step-1)%3+1];
     local player = tutorial.player[ceil(tutorial.current_step/3)];
     if (user_input == needed_move) then
+        tutorial.update_chip = true;
         if (user_input == "place") then
             player_1_to_move = not(player_1_to_move);
         end
 
-        if not(user_input == needed_move) and not(user_input == "idle") then
-            if (use_sound) then
-                sfx(error_sound);
+        if (use_sound) then
+            if (user_input == "left") or (user_input == "right") then
+                sfx(player.id.swipe_sound);
             end
-        end
-        if (user_input == "left") or (user_input == "right") then
-            sfx(tutorial.player
-        end
-        if (tutorial.current_step == 6) then
-            tutorial.finished = true;
+            if (user_input == "place") then
+                sfx(player.id.sound);
+            end
+            if (tutorial.current_step == 6) then
+                tutorial.finished = true;
+            end
         end
 
         tutorial.current_step = tutorial.current_step + 1;
     end
+
+    if not(user_input == needed_move) and not(user_input == "idle") then
+        sfx(error_sound);
+    end
 end
+
 -- this function displays the current state of the tutorial
 function display_tutorial()
     local player = tutorial.player[ceil(tutorial.current_step/3)];
