@@ -140,6 +140,12 @@ function paint_placed_chips()
                 spr(winning_tokens.sprite, winning_tokens.x_2, winning_tokens.y_2, 2, 2);
                 spr(winning_tokens.sprite, winning_tokens.x_3, winning_tokens.y_3, 2, 2);
                 spr(winning_tokens.sprite, winning_tokens.x_4, winning_tokens.y_4, 2, 2);
+                if (player_1_to_move) then
+                    local player = player_1;
+                else
+                    local player = player_2;
+                end
+                print("player " .. player.board_id .. " wins!!!", x_zero_pos+20, y_zero_pos+10, player.color);
             end
         end
     end
