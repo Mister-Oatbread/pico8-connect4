@@ -84,12 +84,18 @@ function _init()
         song_parts = {
             8,
             4,
+            16,
+            12,
+            20,
             0,
         },
         thresholds = {
             0,
             4,
             8,
+            12,
+            16,
+            20,
         },
     }
 
